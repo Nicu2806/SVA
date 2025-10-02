@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recunoașterea Statistică a Formelor: O Explorare Interactivă</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: The application is designed as an interactive educational tool with three main sections: 1) O Privire de Ansamblu (An Overview), 2) Compararea Metodelor (Method Comparison), and 3) Simulator de Clasificare (Classification Simulator). This structure was chosen to guide the user from general concepts to specific details and finally to hands-on practice. A tab-based navigation for the comparison section allows for easy side-by-side analysis of methods, while the interactive simulator provides a tangible way to understand how classification algorithms work in practice. This is more effective for learning than a static, linear report format, as it encourages exploration and active engagement. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Core principles of three pattern recognition methods. Goal: Compare and Understand. Viz/Presentation: A tabbed interface to switch between methods, each with descriptive text, pros/cons lists, and an illustrative Chart.js scatter plot. Interaction: Clicking tabs reveals method-specific content. Justification: Tabs are intuitive for comparing distinct items. Illustrative charts make abstract geometric or probabilistic concepts easier to grasp. Library: Chart.js (Canvas).
+        - Report Info: The process of classification. Goal: Apply and Experiment. Viz/Presentation: An interactive Chart.js scatter plot ("Simulator") with predefined classes. Interaction: Users select a classification method (Distanță Minimă, Decizii Teoretice) and then click on the chart to add a new data point. The application classifies the point in real-time, colors it, draws the corresponding decision boundary, and provides a textual explanation for the classification. Justification: This hands-on experience solidifies understanding far better than passive reading. It directly demonstrates the practical implications of choosing one algorithm over another. Library: Chart.js (Canvas).
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fdfbf8;
+            color: #3f3c3a;
+        }
+        .tab-active {
+            border-color: #c88a53;
+            color: #c88a53;
+            background-color: #fdfbf8;
+            font-weight: 500;
+        }
+        .tab-inactive {
+            border-color: transparent;
+            color: #89837e;
+        }
+        .btn-primary {
+            background-color: #c88a53;
+            color: #ffffff;
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #b57b48;
+        }
+         .btn-secondary {
+            background-color: #e8e3dd;
+            color: #3f3c3a;
+            transition: background-color 0.3s;
+        }
+         .btn-secondary:hover {
+            background-color: #d9d3ca;
+        }
+        .btn-active {
+            background-color: #c88a53;
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #e8e3dd;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 40vh;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <header class="text-center mb-16">
+            <h1 class="text-4xl md:text-5xl font-bold text-[#c88a53] tracking-tight">Recunoașterea Statistică a Formelor</h1>
+            <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">O explorare interactivă a metodelor fundamentale de clasificare a datelor.</p>
+        </header>
+
+        <main>
+            <section id="overview" class="mb-16 card p-8">
+                <h2 class="text-3xl font-bold mb-4 text-center">O Privire de Ansamblu</h2>
+                <p class="text-gray-700 text-center max-w-4xl mx-auto leading-relaxed">
+                    Recunoașterea statistică a formelor este o ramură a inteligenței artificiale care se ocupă cu clasificarea automată a obiectelor sau a modelelor (formelor) în clase predefinite. Procesul implică extragerea unor caracteristici numerice relevante din obiecte și utilizarea acestora pentru a lua o decizie de clasificare bazată pe principii statistice. Această aplicație se concentrează pe trei metode clasice: metoda deciziilor teoretice (Bayes), metoda distanței minime și metoda bazată pe corelație.
+                </p>
+            </section>
+            
+            <section id="comparison" class="mb-16 card p-8">
+                <h2 class="text-3xl font-bold mb-8 text-center">Compararea Metodelor de Clasificare</h2>
+                <div class="flex justify-center border-b border-gray-200 mb-8">
+                    <button class="comparison-tab py-3 px-6 border-b-2 text-lg tab-active" onclick="showTab('bayes')">Decizii Teoretice</button>
+                    <button class="comparison-tab py-3 px-6 border-b-2 text-lg tab-inactive" onclick="showTab('min_distance')">Distanță Minimă</button>
+                    <button class="comparison-tab py-3 px-6 border-b-2 text-lg tab-inactive" onclick="showTab('correlation')">Corelație</button>
+                </div>
+
+                <div id="bayes" class="tab-content">
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <div>
+                            <h3 class="text-2xl font-bold text-[#c88a53] mb-4">Metoda Deciziilor Teoretice (Bayes)</h3>
+                            <p class="mb-6 text-gray-700 leading-relaxed">Această metodă clasifică un obiect în clasa care are cea mai mare probabilitate a posteriori. Utilizând teorema lui Bayes, combină cunoștințele prealabile despre frecvența claselor (probabilitatea a priori) cu informațiile extrase din datele observate (verosimilitatea) pentru a lua decizia optimă care minimizează rata erorilor de clasificare.</p>
+                            <div class="space-y-4">
+                                <div><h4 class="font-semibold">Avantaje:</h4><ul class="list-disc list-inside text-gray-600"><li>Oferă un cadru optim de clasificare dacă distribuțiile de probabilitate sunt cunoscute.</li><li>Poate modela granițe de decizie complexe (non-liniare).</li></ul></div>
+                                <div><h4 class="font-semibold">Dezavantaje:</h4><ul class="list-disc list-inside text-gray-600"><li>Necesită estimarea densităților de probabilitate, ceea ce poate fi dificil.</li><li>Performanța depinde puternic de corectitudinea ipotezelor despre distribuții.</li></ul></div>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                             <canvas id="bayesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="min_distance" class="tab-content hidden">
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <div>
+                            <h3 class="text-2xl font-bold text-[#c88a53] mb-4">Metoda Distanței Minime</h3>
+                            <p class="mb-6 text-gray-700 leading-relaxed">O metodă simplă și intuitivă, care clasifică un obiect în clasa al cărei prototip (de obicei, media caracteristicilor) este cel mai apropiat în spațiul caracteristicilor. Decizia se bazează pe calcularea unei distanțe, cel mai adesea distanța Euclidiană, între vectorul de caracteristici al noului obiect și prototipul fiecărei clase.</p>
+                             <div class="space-y-4">
+                                <div><h4 class="font-semibold">Avantaje:</h4><ul class="list-disc list-inside text-gray-600"><li>Extrem de simplu de implementat și foarte rapid computațional.</li><li>Funcționează bine când clasele sunt compacte și bine separate.</li></ul></div>
+                                <div><h4 class="font-semibold">Dezavantaje:</h4><ul class="list-disc list-inside text-gray-600"><li>Este un clasificator liniar și eșuează pentru clase care nu sunt separabile liniar.</li><li>Sensibil la date anormale (outliers) care pot afecta calculul mediei.</li></ul></div>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="minDistanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="correlation" class="tab-content hidden">
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <div>
+                            <h3 class="text-2xl font-bold text-[#c88a53] mb-4">Metoda Bazată pe Corelație</h3>
+                            <p class="mb-6 text-gray-700 leading-relaxed">Această metodă clasifică un obiect pe baza similarității de formă cu prototipurile claselor, ignorând magnitudinea. Se calculează coeficientul de corelație (sau cosinusul unghiului) între vectorul de caracteristici al obiectului și prototipul fiecărei clase. Obiectul este atribuit clasei care prezintă corelația maximă.</p>
+                             <div class="space-y-4">
+                                <div><h4 class="font-semibold">Avantaje:</h4><ul class="list-disc list-inside text-gray-600"><li>Invariant la scalarea uniformă a datelor (ex: luminozitate, amplitudine).</li><li>Utilă pentru recunoașterea de șabloane și forme.</li></ul></div>
+                                <div><h4 class="font-semibold">Dezavantaje:</h4><ul class="list-disc list-inside text-gray-600"><li>De asemenea un clasificator liniar în forma sa de bază.</li><li>Pierde informația legată de magnitudinea vectorului de caracteristici.</li></ul></div>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                             <canvas id="correlationChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="simulator" class="card p-8">
+                 <h2 class="text-3xl font-bold mb-2 text-center">Simulator de Clasificare</h2>
+                 <p class="text-center text-gray-600 mb-6 max-w-3xl mx-auto">Experimentați direct cum funcționează algoritmii. Selectați o metodă de clasificare mai jos, apoi faceți clic oriunde în grafic pentru a adăuga un nou punct de date și a vedea cum este clasificat în timp real.</p>
+                <div class="flex justify-center items-center gap-4 mb-6">
+                    <button id="sim-min-distance-btn" class="simulator-btn btn-primary btn-active rounded-lg px-5 py-2" onclick="setSimulatorMode('min_distance')">Distanță Minimă</button>
+                    <button id="sim-bayes-btn" class="simulator-btn btn-secondary rounded-lg px-5 py-2" onclick="setSimulatorMode('bayes')">Decizii Teoretice</button>
+                </div>
+                <div class="chart-container h-96 max-h-[500px] mx-auto">
+                    <canvas id="simulatorChart"></canvas>
+                </div>
+                <div id="simulator-explanation" class="mt-6 text-center text-lg bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg p-4 min-h-[5rem] flex items-center justify-center max-w-3xl mx-auto">
+                    Selectați o metodă și faceți clic pe grafic pentru a începe.
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center mt-16 text-gray-500">
+            <p>O aplicație interactivă pentru explorarea conceptelor de recunoaștere a formelor.</p>
+        </footer>
+    </div>
+
+    <script>
+        let bayesChart, minDistanceChart, correlationChart, simulatorChart;
+        let simulatorMode = 'min_distance';
+
+        const classAData = [{x: 2, y: 3}, {x: 3, y: 4}, {x: 4, y: 3.5}, {x: 3.5, y: 2.5}, {x: 2.5, y: 4.5}];
+        const classBData = [{x: 7, y: 8}, {x: 8, y: 7}, {x: 9, y: 8.5}, {x: 7.5, y: 9}, {x: 8.5, y: 7.5}];
+
+        const classColors = { A: 'rgba(200, 138, 83, 0.7)', B: 'rgba(90, 128, 150, 0.7)' };
+        const classBorders = { A: 'rgb(200, 138, 83)', B: 'rgb(90, 128, 150)' };
+        
+        const chartDefaultOptions = {
+            maintainAspectRatio: false,
+            responsive: true,
+            scales: {
+                x: {
+                    type: 'linear',
+                    position: 'bottom',
+                    min: 0,
+                    max: 10,
+                    grid: { color: '#f0e9e2' }
+                },
+                y: {
+                    min: 0,
+                    max: 10,
+                    grid: { color: '#f0e9e2' }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                },
+                tooltip: {
+                    enabled: false
+                }
+            }
+        };
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.querySelectorAll('.comparison-tab').forEach(tab => {
+                tab.classList.remove('tab-active');
+                tab.classList.add('tab-inactive');
+            });
+
+            document.getElementById(tabName).classList.remove('hidden');
+            document.querySelector(`button[onclick="showTab('${tabName}')"]`).classList.add('tab-active');
+            document.querySelector(`button[onclick="showTab('${tabName}')"]`).classList.remove('tab-inactive');
+        }
+
+        function createBayesChart() {
+            const ctx = document.getElementById('bayesChart').getContext('2d');
+            const data = {
+                datasets: [{
+                    label: 'Clasa A',
+                    data: classAData,
+                    backgroundColor: classColors.A,
+                    borderColor: classBorders.A,
+                    pointRadius: 6,
+                    type: 'scatter'
+                }, {
+                    label: 'Clasa B',
+                    data: classBData,
+                    backgroundColor: classColors.B,
+                    borderColor: classBorders.B,
+                    pointRadius: 6,
+                    type: 'scatter'
+                },
+                {
+                    label: 'Graniță de Decizie (Exemplu)',
+                    data: [{x: 5, y: 0}, {x: 5.5, y: 10}],
+                    borderColor: 'rgba(100, 100, 100, 0.5)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    type: 'line',
+                    fill: false,
+                    pointRadius: 0,
+                    tension: 0.4
+                }]
+            };
+            bayesChart = new Chart(ctx, {
+                type: 'scatter',
+                data: data,
+                options: {...chartDefaultOptions, plugins: { legend: { display: true }, tooltip: { enabled: true } } }
+            });
+        }
+
+        function createMinDistanceChart() {
+            const meanA = { x: classAData.reduce((acc, p) => acc + p.x, 0) / classAData.length, y: classAData.reduce((acc, p) => acc + p.y, 0) / classAData.length };
+            const meanB = { x: classBData.reduce((acc, p) => acc + p.x, 0) / classBData.length, y: classBData.reduce((acc, p) => acc + p.y, 0) / classBData.length };
+            const newPoint = { x: 5.5, y: 5 };
+
+            const ctx = document.getElementById('minDistanceChart').getContext('2d');
+            const data = {
+                datasets: [
+                    { label: 'Clasa A', data: classAData, backgroundColor: classColors.A, borderColor: classBorders.A, pointRadius: 5, type: 'scatter' },
+                    { label: 'Clasa B', data: classBData, backgroundColor: classColors.B, borderColor: classBorders.B, pointRadius: 5, type: 'scatter' },
+                    { label: 'Prototip Clasa A', data: [meanA], backgroundColor: 'white', borderColor: classBorders.A, borderWidth: 3, pointRadius: 8, pointStyle: 'crossRot', type: 'scatter' },
+                    { label: 'Prototip Clasa B', data: [meanB], backgroundColor: 'white', borderColor: classBorders.B, borderWidth: 3, pointRadius: 8, pointStyle: 'crossRot', type: 'scatter' },
+                    { label: 'Punct Nou', data: [newPoint], backgroundColor: 'rgba(255, 99, 132, 1)', pointRadius: 7, type: 'scatter' },
+                    { label: 'Distanță la A', data: [newPoint, meanA], borderColor: 'rgba(200, 138, 83, 0.5)', borderWidth: 2, borderDash: [5, 5], type: 'line', pointRadius: 0 },
+                    { label: 'Distanță la B', data: [newPoint, meanB], borderColor: 'rgba(90, 128, 150, 0.5)', borderWidth: 2, borderDash: [5, 5], type: 'line', pointRadius: 0 }
+                ]
+            };
+            minDistanceChart = new Chart(ctx, {
+                type: 'scatter',
+                data: data,
+                options: {...chartDefaultOptions, plugins: { legend: { display: true }, tooltip: { enabled: true } } }
+            });
+        }
+        
+        function createCorrelationChart() {
+            const origin = {x: 0, y: 0};
+            const protoA = {x:3, y:3.5};
+            const protoB = {x:8, y:8};
+            const newPoint = {x: 4, y: 6};
+            const ctx = document.getElementById('correlationChart').getContext('2d');
+            const data = {
+                 datasets: [
+                    { label: 'Vector Prototip A', data: [origin, protoA], borderColor: classBorders.A, borderWidth: 2, type: 'line', pointRadius: [0, 5], fill: false },
+                    { label: 'Vector Prototip B', data: [origin, protoB], borderColor: classBorders.B, borderWidth: 2, type: 'line', pointRadius: [0, 5], fill: false },
+                    { label: 'Vector Punct Nou', data: [origin, newPoint], borderColor: 'rgba(255, 99, 132, 1)', borderWidth: 3, type: 'line', pointRadius: [0, 7], fill: false }
+                ]
+            };
+             correlationChart = new Chart(ctx, {
+                type: 'scatter',
+                data: data,
+                options: {...chartDefaultOptions, plugins: { legend: { display: true }, tooltip: { enabled: true } },
+                scales: {
+                    x: { ...chartDefaultOptions.scales.x, suggestedMin: 0, suggestedMax: 10 },
+                    y: { ...chartDefaultOptions.scales.y, suggestedMin: 0, suggestedMax: 10 }
+                }}
+            });
+        }
+
+        function createSimulatorChart() {
+            const ctx = document.getElementById('simulatorChart').getContext('2d');
+            const data = {
+                datasets: [{
+                    label: 'Clasa A',
+                    data: classAData,
+                    backgroundColor: classColors.A,
+                    borderColor: classBorders.A,
+                    pointRadius: 6,
+                }, {
+                    label: 'Clasa B',
+                    data: classBData,
+                    backgroundColor: classColors.B,
+                    borderColor: classBorders.B,
+                    pointRadius: 6,
+                }]
+            };
+
+            simulatorChart = new Chart(ctx, {
+                type: 'scatter',
+                data: data,
+                options: { ...chartDefaultOptions, onClick: handleSimulatorClick, plugins: { legend: { display: true } } }
+            });
+            updateDecisionBoundary();
+        }
+
+        function setSimulatorMode(mode) {
+            simulatorMode = mode;
+            document.querySelectorAll('.simulator-btn').forEach(btn => {
+                btn.classList.remove('btn-active', 'btn-primary');
+                btn.classList.add('btn-secondary');
+            });
+            document.getElementById(`sim-${mode}-btn`).classList.add('btn-active', 'btn-primary');
+            document.getElementById(`sim-${mode}-btn`).classList.remove('btn-secondary');
+
+            while (simulatorChart.data.datasets.length > 2) {
+                simulatorChart.data.datasets.pop();
+            }
+            updateDecisionBoundary();
+            simulatorChart.update();
+            document.getElementById('simulator-explanation').textContent = `Modul '${mode === 'min_distance' ? 'Distanță Minimă' : 'Decizii Teoretice'}' este activ. Faceți clic pe grafic.`;
+        }
+
+        function handleSimulatorClick(event) {
+            const canvas = event.chart.canvas;
+            const rect = canvas.getBoundingClientRect();
+            const x = event.chart.scales.x.getValueForPixel(event.x);
+            const y = event.chart.scales.y.getValueForPixel(event.y);
+            
+            if (x < 0 || x > 10 || y < 0 || y > 10) return;
+
+            const newPoint = { x, y };
+
+            while (simulatorChart.data.datasets.length > 2) {
+                simulatorChart.data.datasets.pop();
+            }
+
+            const { classifiedClass, explanation } = classifyPoint(newPoint);
+
+            simulatorChart.data.datasets.push({
+                label: 'Punct Nou',
+                data: [newPoint],
+                backgroundColor: classColors[classifiedClass],
+                borderColor: classBorders[classifiedClass],
+                pointRadius: 8,
+                pointStyle: 'star'
+            });
+            
+            updateDecisionBoundary(newPoint);
+            simulatorChart.update();
+            document.getElementById('simulator-explanation').innerHTML = explanation;
+        }
+        
+        const getMean = (data) => ({
+            x: data.reduce((sum, p) => sum + p.x, 0) / data.length,
+            y: data.reduce((sum, p) => sum + p.y, 0) / data.length,
+        });
+
+        function classifyPoint(point) {
+            const meanA = getMean(classAData);
+            const meanB = getMean(classBData);
+
+            if (simulatorMode === 'min_distance') {
+                const distA = Math.sqrt((point.x - meanA.x) ** 2 + (point.y - meanA.y) ** 2);
+                const distB = Math.sqrt((point.x - meanB.x) ** 2 + (point.y - meanB.y) ** 2);
+                const classifiedClass = distA < distB ? 'A' : 'B';
+                const explanation = `Clasificat în <b>Clasa ${classifiedClass}</b>. <br>Distanța până la prototipul A: ${distA.toFixed(2)}. Distanța până la prototipul B: ${distB.toFixed(2)}.`;
+                return { classifiedClass, explanation };
+            } else if (simulatorMode === 'bayes') {
+                const getCovariance = (data, mean) => {
+                  let cov_xx = data.reduce((s, p) => s + (p.x - mean.x) ** 2, 0) / data.length;
+                  let cov_yy = data.reduce((s, p) => s + (p.y - mean.y) ** 2, 0) / data.length;
+                  return { xx: cov_xx, yy: cov_yy };
+                };
+                const covA = getCovariance(classAData, meanA);
+                const covB = getCovariance(classBData, meanB);
+                
+                const probDensity = (p, mean, cov) => {
+                    const exponent = -0.5 * (((p.x - mean.x)**2 / cov.xx) + ((p.y - mean.y)**2 / cov.yy));
+                    const coeff = 1 / (2 * Math.PI * Math.sqrt(cov.xx * cov.yy));
+                    return coeff * Math.exp(exponent);
+                };
+                
+                const probA = probDensity(point, meanA, covA);
+                const probB = probDensity(point, meanB, covB);
+
+                const classifiedClass = probA > probB ? 'A' : 'B';
+                const explanation = `Clasificat în <b>Clasa ${classifiedClass}</b>. <br>Scor de probabilitate (verosimilitate) pentru Clasa A: ${probA.toExponential(2)}. Pentru Clasa B: ${probB.toExponential(2)}.`;
+                return { classifiedClass, explanation };
+            }
+        }
+        
+        function updateDecisionBoundary() {
+            const existingBoundary = simulatorChart.data.datasets.find(ds => ds.label === 'Graniță Decizie');
+            if(existingBoundary) {
+                const index = simulatorChart.data.datasets.indexOf(existingBoundary);
+                simulatorChart.data.datasets.splice(index, 1);
+            }
+           
+            const meanA = getMean(classAData);
+            const meanB = getMean(classBData);
+            let boundaryData = [];
+
+            if (simulatorMode === 'min_distance') {
+                const midPoint = { x: (meanA.x + meanB.x) / 2, y: (meanA.y + meanB.y) / 2 };
+                const slope = (meanB.x - meanA.x) / (meanA.y - meanB.y);
+                if (Math.abs(slope) > 1) {
+                    for(let x = 0; x <= 10; x += 0.5) {
+                        const y = slope * (x - midPoint.x) + midPoint.y;
+                        boundaryData.push({x, y});
+                    }
+                } else {
+                     for(let y = 0; y <= 10; y += 0.5) {
+                        const x = (y - midPoint.y) / slope + midPoint.x;
+                        boundaryData.push({x, y});
+                    }
+                }
+            } else { 
+                for (let x = 0; x <= 10; x += 0.2) {
+                    for (let y = 0; y <= 10; y += 0.2) {
+                       const { classifiedClass } = classifyPoint({x,y});
+                       const { classifiedClass: nextClass } = classifyPoint({x,y: y+0.2});
+                       if (classifiedClass !== nextClass) {
+                           boundaryData.push({x, y: y+0.1});
+                       }
+                    }
+                }
+            }
+            
+             simulatorChart.data.datasets.push({
+                label: 'Graniță Decizie',
+                data: boundaryData,
+                borderColor: 'rgba(100, 100, 100, 0.7)',
+                borderWidth: 2,
+                pointRadius: 0,
+                type: 'scatter',
+                showLine: false,
+                order: -1
+             });
+
+            simulatorChart.update();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            createBayesChart();
+            createMinDistanceChart();
+            createCorrelationChart();
+            createSimulatorChart();
+        });
+
+    </script>
+</body>
+</html>
